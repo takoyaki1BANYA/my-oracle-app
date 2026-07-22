@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 
 /* ═══════════════════════════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════════════════════════ */
+const hexToRgbStr = (hex) => {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  const num = parseInt(c, 16);
+  return `${(num >> 16) & 255},${(num >> 8) & 255},${num & 255}`;
+};
+
+/* ═══════════════════════════════════════════════════════════════════
    GLOBAL STYLES
 ═══════════════════════════════════════════════════════════════════ */
 const CSS = `
@@ -94,18 +104,18 @@ input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(.55);}
    DATA
 ═══════════════════════════════════════════════════════════════════ */
 const ORACLES = [
-  { symbol:"🃏", name:"タロット",    color:"#9333EA", msg:"運命のカードが舞い散る…" },
+  { symbol:"🃏", name:"タロット",     color:"#9333EA", msg:"運命のカードが舞い散る…" },
   { symbol:"♈",  name:"西洋占星術",  color:"#3B82F6", msg:"星々が整列し語り始める…" },
   { symbol:"∞",  name:"数秘術",      color:"#F59E0B", msg:"数字の真実が解読される…" },
   { symbol:"ᚱ",  name:"ルーン",      color:"#EF4444", msg:"古代文字が石に刻まれる…" },
   { symbol:"☯",  name:"易経",        color:"#10B981", msg:"64卦が銅銭で開かれる…" },
-  { symbol:"柱",  name:"四柱推命",   color:"#F97316", msg:"年月日時の命式が組まれる…" },
+  { symbol:"柱",  name:"四柱推命",    color:"#F97316", msg:"年月日時の命式が組まれる…" },
   { symbol:"✦",  name:"九星気学",    color:"#06B6D4", msg:"九つの星気が流れ込む…" },
-  { symbol:"✋", name:"手相",         color:"#D97706", msg:"生命線が語り始める…" },
-  { symbol:"ॐ",  name:"ヴェーダ",   color:"#8B5CF6", msg:"カルマの糸が見え始める…" },
+  { symbol:"✋", name:"手相",        color:"#D97706", msg:"生命線が語り始める…" },
+  { symbol:"ॐ",  name:"ヴェーダ",    color:"#8B5CF6", msg:"カルマの糸が見え始める…" },
   { symbol:"☕", name:"コーヒー占い", color:"#A16207", msg:"運命の形が浮かび上がる…" },
   { symbol:"᚛᚜", name:"オガム",      color:"#166534", msg:"聖樹が太古の知恵を囁く…" },
-  { symbol:"⛩",  name:"おみくじ",   color:"#BE123C", msg:"神のお告げが降りてくる…" }
+  { symbol:"⛩",  name:"おみくじ",    color:"#BE123C", msg:"神のお告げが降りてくる…" }
 ];
 
 const SECTION_META = [
@@ -250,7 +260,6 @@ const HeroPage = ({ onStart }) => (
       なぜあなたが今ここにいるのか、その答えがここにあります。
     </p>
 
-    {/* Oracle preview icons */}
     <div className="a3" style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:12,marginBottom:48}}>
       {ORACLES.map((o,i) => (
         <div key={i} title={o.name} style={{
@@ -296,9 +305,9 @@ const FormPage = ({ onSubmit, onBack }) => {
   const set = (k,v) => setF(p=>({...p,[k]:v}));
 
   const fields = [
-    {k:'name',      label:'お名前（フルネーム）',    type:'text',    ph:'例：山田 太郎',     required:true},
-    {k:'birthdate', label:'生年月日',                type:'date',    ph:'',                   required:true},
-    {k:'birthtime', label:'出生時刻（任意・精度が上がります）', type:'time', ph:'',          required:false},
+    {k:'name',      label:'お名前（フルネーム）',    type:'text',    ph:'例：山田 太郎',      required:true},
+    {k:'birthdate', label:'生年月日',                type:'date',    ph:'',                  required:true},
+    {k:'birthtime', label:'出生時刻（任意・精度が上がります）', type:'time', ph:'',           required:false},
     {k:'gender',    label:'性別',                    type:'select',  opts:['女性','男性','その他'], required:false},
     {k:'situation', label:'現在の状況・悩み',        type:'textarea', ph:'今どんな状況にいるか、何に悩んでいるか自由に', required:false},
     {k:'question',  label:'神託に聞きたいこと',      type:'textarea', ph:'最も知りたいこと、神様に問いかけたいことを',   required:false},
@@ -367,14 +376,13 @@ const FormPage = ({ onSubmit, onBack }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   LOADING PAGE — the signature epic sequence
+   LOADING PAGE
 ═══════════════════════════════════════════════════════════════════ */
 const LoadingPage = ({ apiDone, result, onComplete }) => {
   const [activated, setActivated] = useState(0);
   const [synthPhase, setSynthPhase] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Activate oracles one by one
   useEffect(() => {
     if (activated >= ORACLES.length) return;
     const t = setTimeout(() => setActivated(a => a+1), 260);
@@ -383,7 +391,6 @@ const LoadingPage = ({ apiDone, result, onComplete }) => {
 
   const animDone = activated >= ORACLES.length;
 
-  // After animation, show synthesis phase
   useEffect(() => {
     if (animDone) {
       const t = setTimeout(() => setSynthPhase(true), 400);
@@ -391,7 +398,6 @@ const LoadingPage = ({ apiDone, result, onComplete }) => {
     }
   }, [animDone]);
 
-  // When both anim + api done, mark ready and trigger
   useEffect(() => {
     if (animDone && apiDone && result) {
       const t = setTimeout(() => { setReady(true); onComplete(); }, 900);
@@ -418,11 +424,9 @@ const LoadingPage = ({ apiDone, result, onComplete }) => {
         }
       </p>
 
-      {/* 4×3 Oracle Grid */}
       <div className="oracle-grid" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:36}}>
         {ORACLES.map((o, i) => {
           const isOn = i < activated;
-          const isLatest = i === activated - 1;
           return (
             <div
               key={i}
@@ -453,7 +457,6 @@ const LoadingPage = ({ apiDone, result, onComplete }) => {
         })}
       </div>
 
-      {/* Progress bar */}
       <div style={{height:2,background:'rgba(200,180,255,.1)',borderRadius:2,marginBottom:20,overflow:'hidden'}}>
         <div style={{
           height:'100%',borderRadius:2,
@@ -467,7 +470,6 @@ const LoadingPage = ({ apiDone, result, onComplete }) => {
         {activated} / {ORACLES.length} 神託起動完了
       </div>
 
-      {/* Synthesis dots */}
       {synthPhase && !ready && (
         <div style={{marginTop:24,display:'flex',justifyContent:'center',gap:10,alignItems:'center',animation:'fadeIn .5s ease'}}>
           <div style={{fontSize:11,color:'rgba(196,154,60,.6)',fontFamily:"'Cinzel',serif",letterSpacing:'.15em'}}>統合中</div>
@@ -506,36 +508,22 @@ const ResultSection = ({ meta, text, delay }) => {
           const parts = ln.split(/(\*\*.*?\*\*)/);
           return (
             <div key={i} style={{marginBottom:'.15em'}}>
-              {parts.map((p,j) => p.startsWith('**')
-const handleSubmit = async (f) => {
-    setInputs(f);
-    setApiDone(false);
-    setResult(null);
-    setError(null);
-    setPhase('loading');
-    window.scrollTo({top:0,behavior:'smooth'});
+              {parts.map((p,j) => p.startsWith('**') && p.endsWith('**') ? (
+                <strong key={j} style={{color:'#FDE68A',fontWeight:600}}>{p.slice(2,-2)}</strong>
+              ) : p)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
-    try {
-      const res = await fetch('/api/oracle', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          model:'claude-sonnet-4-6',
-          max_tokens:8000,
-          system:SYSTEM_PROMPT,
-          messages:[{role:'user',content:buildMsg(f)}]
-        })
-      });
-      const data = await res.json();
-      const txt = data.content?.map(b=>b.text||'').join('') || 'エラーが発生しました。';
-      setResult(txt);
-      setApiDone(true);
-    } catch(e) {
-      setError('通信エラーが発生しました。');
-      setApiDone(true);
-      setResult('エラーが発生しました。もう一度お試しください。');
-    }
-  };
+/* ═══════════════════════════════════════════════════════════════════
+   RESULT PAGE
+═══════════════════════════════════════════════════════════════════ */
+const parseResult = (text) => {
+  if (!text) return {};
   const KEYS = ['神託の証明','本質と使命','過去の真実','現在の核心','近未来の予言','遠未来の啓示','最後のメッセージ'];
   const sections = {};
   let current = null;
@@ -560,7 +548,6 @@ const ResultPage = ({ result, inputs, onReset }) => {
 
   return (
     <div style={{maxWidth:780,margin:'0 auto',padding:'40px 20px 80px'}}>
-      {/* Header */}
       <div className="a1" style={{textAlign:'center',marginBottom:40}}>
         <div style={{fontSize:13,color:'#C49A3C',fontFamily:"'Cinzel',serif",letterSpacing:'.25em',marginBottom:10}}>
           ORACLE COMPLETE
@@ -579,7 +566,6 @@ const ResultPage = ({ result, inputs, onReset }) => {
           12の神託による過去・現在・未来の統合鑑定
         </div>
 
-        {/* All 12 oracle symbols strip */}
         <div style={{display:'flex',justifyContent:'center',flexWrap:'wrap',gap:8,marginBottom:24}}>
           {ORACLES.map((o,i) => (
             <div key={i} style={{
@@ -596,7 +582,6 @@ const ResultPage = ({ result, inputs, onReset }) => {
         <div style={{width:200,height:1,background:'linear-gradient(90deg,transparent,#C49A3C,transparent)',margin:'0 auto'}} />
       </div>
 
-      {/* Sections */}
       <div style={{display:'flex',flexDirection:'column',gap:16,marginBottom:36}}>
         {SECTION_META.map((meta, i) => {
           const text = sections[meta.key];
@@ -604,7 +589,6 @@ const ResultPage = ({ result, inputs, onReset }) => {
           return <ResultSection key={meta.key} meta={meta} text={text} delay={i*.08} />;
         })}
 
-        {/* Fallback: if parsing failed, show raw */}
         {Object.keys(sections).length === 0 && (
           <div style={{
             background:'rgba(20,8,55,.6)',border:'1px solid rgba(196,154,60,.2)',
@@ -617,7 +601,6 @@ const ResultPage = ({ result, inputs, onReset }) => {
         )}
       </div>
 
-      {/* Actions */}
       <div className="a4" style={{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap'}}>
         <button onClick={copyAll} style={{
           background:'rgba(255,255,255,.05)',border:'1px solid rgba(200,180,255,.15)',
@@ -678,14 +661,12 @@ export default function App() {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          model:'claude-sonnet-4-6',
-          max_tokens:8000,
-          system:SYSTEM_PROMPT,
-          messages:[{role:'user',content:buildMsg(f)}]
+          prompt: buildMsg(f),
+          systemInstruction: SYSTEM_PROMPT
         })
       });
       const data = await res.json();
-      const txt = data.content?.map(b=>b.text||'').join('') || 'エラーが発生しました。';
+      const txt = data.result || 'エラーが発生しました。';
       setResult(txt);
       setApiDone(true);
     } catch(e) {
