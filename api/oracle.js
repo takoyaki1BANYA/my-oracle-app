@@ -1,29 +1,59 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY が設定されていません。' });
   }
 
   try {
     const { system, messages } = req.body;
+    const userPrompt = messages?.[0]?.content || '';
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 8000,
-        system: system,
-        messages: messages,
-      }),
+        system_instruction: {
+          parts: [{ text: system || '' }]
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: userPrompt }]
+          }
+        ],
+        generationConfig: {
+          maxOutputTokens: 8192,
+          temperature: 0.8,
+        }
+      })
     });
 
     const data = await response.json();
-    return res.status(200).json(data);
+
+    if (!response.ok) {
+      console.error('Gemini API Error:', data);
+      return res.status(response.status).json({ error: data.error?.message || 'Gemini API エラーが発生しました' });
+    }
+
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    return res.status(200).json({
+      content: [
+        {
+          type: 'text',
+          text: generatedText
+        }
+      ]
+    });
+
   } catch (error) {
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Server error:', error);
+    return res.status(500).json({ error: 'サーバー内部エラーが発生しました。' });
   }
 }
